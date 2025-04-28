@@ -1,1 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ad Clicker Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #currency {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    .upgrade-section {
+      margin-top: 40px;
+    }
+  </style>
+  <script src="https://cdn.adinplay.com/sdk/sdk.js"></script>
+</head>
+<body>
+
+<h1>Ad Clicker Game</h1>
+<div id="currency">Currency: 0</div>
+<div id="helpers">Helpers: 0</div>
+<button onclick="playRewardedAd()">Watch Ad</button>
+
+<div class="upgrade-section">
+  <h2>Upgrades</h2>
+  <button onclick="buyMultiplier()">Upgrade Multiplier (Cost: <span id="multiplierCost">1</span> coins)</button><br>
+  <button onclick="buyHelper()">Hire Helper (5 coins each)</button>
+</div>
+
+<script>
+let currency = 0;
+let displayCurrency = 0;
+let multiplier = 1;
+let multiplierLevel = 1;
+let multiplierCost = 1;
+let helpers = 0;
+const maxHelpers = 25;
+
+// Load progress if available
+function loadProgress() {
+  const saved = JSON.parse(localStorage.getItem('adClickerSave'));
+  if (saved) {
+    currency = saved.currency ?? 0;
+    multiplier = saved.multiplier ?? 1;
+    multiplierLevel = saved.multiplierLevel ?? 1;
+    multiplierCost = saved.multiplierCost ?? 1;
+    helpers = saved.helpers ?? 0;
+  }
+}
+function saveProgress() {
+  const saveData = {
+    currency,
+    multiplier,
+    multiplierLevel,
+    multiplierCost,
+    helpers
+  };
+  localStorage.setItem('adClickerSave', JSON.stringify(saveData));
+}
+
+// Smoothly animate currency display
+function animateCurrency() {
+  if (Math.abs(displayCurrency - currency) > 0.1) {
+    displayCurrency += (currency - displayCurrency) * 0.2;
+    document.getElementById('currency').innerText = `Currency: ${Math.floor(displayCurrency)}`;
+    requestAnimationFrame(animateCurrency);
+  } else {
+    displayCurrency = currency;
+    document.getElementById('currency').innerText = `Currency: ${currency}`;
+  }
+}
+
+// Play Rewarded Ad
+function playRewardedAd() {
+  if (window.adinplay) {
+    adinplay.rewardedVideo.show({
+      adUnitId: 'your-real-adunit-id-here', // <-- Replace with YOUR ad unit ID
+      onAdComplete: function() {
+        let earned = multiplier;
+        currency += earned;
+        updateDisplay();
+        alert(`You earned +${earned} coins!`);
+      },
+      onAdSkipped: function() {
+        alert('You skipped the ad! No reward.');
+      },
+      onAdError: function(error) {
+        console.error('Ad Error:', error);
+        alert('Error showing ad.');
+      }
+    });
+  } else {
+    alert('AdinPlay SDK not ready yet.');
+  }
+}
+
+// Buy Multiplier Upgrade
+function buyMultiplier() {
+  if (currency >= multiplierCost) {
+    currency -= multiplierCost;
+    multiplierLevel++;
+    multiplier = multiplierLevel; // 2x, 3x, etc.
+    multiplierCost = Math.floor(multiplierCost * 3);
+    updateDisplay();
+    alert(`Multiplier upgraded! Now earning x${multiplier} per ad.`);
+  } else {
+    alert('Not enough coins for multiplier upgrade.');
+  }
+}
+
+// Buy Helper
+function buyHelper() {
+  if (currency >= 5) {
+    if (helpers >= maxHelpers) {
+      alert('You have the maximum number of helpers!');
+      return;
+    }
+    currency -= 5;
+    helpers++;
+    updateDisplay();
+    alert('Helper hired! +1 coin every 30 seconds.');
+  } else {
+    alert('Not enough coins for a helper.');
+  }
+}
+
+// Auto-generate coins from Helpers
+setInterval(() => {
+  if (helpers > 0) {
+    currency += helpers;
+    updateDisplay();
+  }
+}, 30000); // Every 30 seconds
+
+// Update all displays
+function updateDisplay() {
+  document.getElementById('helpers').innerText = `Helpers: ${helpers}`;
+  document.getElementById('multiplierCost').innerText = multiplierCost;
+  saveProgress();
+  animateCurrency();
+}
+
+// Initial load
+loadProgress();
+updateDisplay();
+animateCurrency();
+</script>
+
+</body>
+</html>
 
